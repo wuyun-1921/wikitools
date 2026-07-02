@@ -16,7 +16,7 @@ A pre-built **English ↔ Chinese** bi-directional dictionary is included in rel
 # English ↔ Chinese
 wikititlepair en zh
 
-# Japanese ↔ Korean
+# Any two Wikipedia languages (e.g. Japanese ↔ Korean)
 wikititlepair ja ko
 
 # Allow downloading dump if not cached
