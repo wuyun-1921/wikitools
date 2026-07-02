@@ -102,6 +102,15 @@ jobs:
           pip install mdict-utils
           python scripts/dsl2mdx.py wikipedia-titlepair-en-zh-*.dsl -t "wikipedia titlepair (en-zh)"
 
+      - name: Copy icon alongside dictionaries
+        run: |
+          DSL_BASE=$(ls wikipedia-titlepair-en-zh-*.dsl.dz | head -1)
+          # Icon for DSL (GoldenDict looks for .bmp with same basename)
+          cp assets/wikipedia.ico "${DSL_BASE%.dsl.dz}.ico"
+          # Icon for MDX
+          MDX_FILE=$(ls wikipedia-titlepair-en-zh-*.mdx | head -1)
+          cp assets/wikipedia.ico "${MDX_FILE%.mdx}.ico"
+
       - name: Upload dictionary artifacts
         uses: actions/upload-artifact@v5
         with:
@@ -109,6 +118,7 @@ jobs:
           path: |
             wikipedia-titlepair-en-zh-*.dsl*
             wikipedia-titlepair-en-zh-*.mdx
+            wikipedia-titlepair-en-zh-*.ico
 
   release:
     needs: [build, dictionary]
@@ -147,4 +157,5 @@ jobs:
             wikititlepair-*.zip
             wikipedia-titlepair-*.dsl*
             wikipedia-titlepair-*.mdx
+            wikipedia-titlepair-*.ico
             !*.dsl
