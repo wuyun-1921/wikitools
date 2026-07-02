@@ -80,7 +80,7 @@ jobs:
           fi
           echo "remote_ymd=$REMOTE_YMD" >> $GITHUB_OUTPUT
 
-      - name: Build binary (if needed)
+      - name: Install Rust (if needed)
         if: steps.check.outputs.update == 'true'
         uses: dtolnay/rust-toolchain@stable
 

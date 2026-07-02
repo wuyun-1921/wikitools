@@ -8,6 +8,7 @@
 *.ifo
 *.syn
 *.db
-*.txt
+*.db.txt
+wikipedia-titlepair-*.txt
 test.*
 __pycache__/
