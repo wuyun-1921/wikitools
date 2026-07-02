@@ -10,3 +10,4 @@
 *.db
 *.txt
 test.*
+__pycache__/

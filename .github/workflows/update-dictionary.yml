@@ -78,6 +78,7 @@ jobs:
             echo "update=true" >> $GITHUB_OUTPUT
             echo "Update needed - new dump available"
           fi
+          echo "remote_ymd=$REMOTE_YMD" >> $GITHUB_OUTPUT
 
       - name: Build binary (if needed)
         if: steps.check.outputs.update == 'true'
@@ -123,14 +124,14 @@ jobs:
         if: steps.check.outputs.update == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0
-          name: v0.1.0
+          tag_name: dict-${{ steps.check.outputs.remote_ymd }}
+          name: Dictionary ${{ steps.dump-date.outputs.date }}
           body: |
             ## Dictionary Update
             
-            Wikidata dump updated to ${{ steps.dump-date.outputs.date }}.
+            Wikidata dump from ${{ steps.dump-date.outputs.date }}.
             
-            Includes updated **English ↔ Chinese** bi-directional dictionary.
+            Updated **English ↔ Chinese** bi-directional dictionary.
           files: |
             wikipedia-titlepair-*.dsl*
           append_body: true

@@ -54,16 +54,24 @@ fn get_dump_date() -> Result<String> {
         .output()?;
     
     let html = String::from_utf8_lossy(&output.stdout);
-    // Parse date from HTML: "03-Jun-2026"
     for line in html.lines() {
         if line.contains("wb_items_per_site.sql.gz") {
-            if let Some(pos) = line.find("-Jun-") {
-                // Extract "DD-Mon-YYYY" pattern
-                let start = pos - 2;
-                let end = pos + 9;
-                if end <= line.len() {
-                    let date_str = &line[start..end];
-                    // Convert to YYYYMMDD
+            // Manual scan for DD-Mon-YYYY pattern: 2 digits, -, uppercase, 2 lowercase, -, 4 digits
+            let chars: Vec<char> = line.chars().collect();
+            for i in 0..chars.len().saturating_sub(10) {
+                if chars[i].is_ascii_digit()
+                    && chars[i + 1].is_ascii_digit()
+                    && chars[i + 2] == '-'
+                    && chars[i + 3].is_ascii_uppercase()
+                    && chars[i + 4].is_ascii_lowercase()
+                    && chars[i + 5].is_ascii_lowercase()
+                    && chars[i + 6] == '-'
+                    && chars[i + 7].is_ascii_digit()
+                    && chars[i + 8].is_ascii_digit()
+                    && chars[i + 9].is_ascii_digit()
+                    && chars[i + 10].is_ascii_digit()
+                {
+                    let date_str: String = chars[i..i + 11].iter().collect();
                     let parts: Vec<&str> = date_str.split('-').collect();
                     if parts.len() == 3 {
                         let day = parts[0];
