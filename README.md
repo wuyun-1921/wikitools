@@ -6,13 +6,9 @@ Generate bidirectional DSL dictionaries from Wikipedia interlanguage links via W
 
 Downloads the Wikidata `wb_items_per_site` dump and extracts interlanguage links between any two Wikipedia language editions. Outputs an ABBYY Lingvo `.dsl` dictionary file where clicking a word in one language jumps to its entry in the other language.
 
-## Releases
+## Pre-built dictionaries
 
-Includes pre-built **English ↔ Chinese** bi-directional dictionary updated from Wikidata.
-
-## Auto-update
-
-A scheduled workflow checks weekly for new Wikidata dumps and publishes an updated dictionary if available - no recompilation needed if no code changes.
+A pre-built **English ↔ Chinese** bi-directional dictionary is included in releases. A scheduled workflow checks weekly for new Wikidata dumps and publishes an updated dictionary if available - no recompilation needed if no code changes.
 
 ## Usage
 
@@ -52,10 +48,8 @@ Clicking `音乐` in the Music entry jumps to the `音乐` entry.
 - Rust 1.75+
 - `dictzip` (for `.dsl.dz` compression)
 
-## Data Source
+## Data source
 
 Uses the Wikidata [`wb_items_per_site` dump](https://dumps.wikimedia.org/wikidatawiki/latest/wikidatawiki-latest-wb_items_per_site.sql.gz) (~1.8GB compressed). This table maps Wikipedia page titles across all language editions via shared Wikidata item IDs.
 
-## Cache
-
-Dump files are cached in `~/.cache/wikidict/`.
+Dump files are cached in `~/.cache/wikidict/` for reuse across runs.
