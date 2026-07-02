@@ -511,16 +511,12 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         output.display()
     );
 
-    // Compress with dictzip
+    // Compress with dictzip (skip gracefully if unavailable, e.g. Windows)
     let dz_output = output.with_extension("dsl.dz");
     eprintln!("Compressing with dictzip...");
-    let status = Command::new("dictzip")
-        .arg(output.to_str().unwrap())
-        .status()?;
-    if status.success() {
-        eprintln!("  {} created", dz_output.display());
-    } else {
-        eprintln!("  dictzip failed (dsl file kept)");
+    match Command::new("dictzip").arg(output.to_str().unwrap()).status() {
+        Ok(s) if s.success() => eprintln!("  {} created", dz_output.display()),
+        _ => eprintln!("  dictzip unavailable or failed (dsl file kept)"),
     }
 
     Ok(())
