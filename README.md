@@ -6,6 +6,8 @@ Generate bidirectional DSL dictionaries from Wikidata interlanguage links.
 
 Downloads the Wikidata `wb_items_per_site` dump and extracts interlanguage links between any two Wikipedia language editions. Outputs an ABBYY Lingvo `.dsl` dictionary file where clicking a word in one language jumps to its entry in the other language.
 
+Inspired by [ZZ's wikipedia titlepair](https://github.com/zz945369046/wikipedia_titlepair).
+
 ## Usage
 
 ```bash
