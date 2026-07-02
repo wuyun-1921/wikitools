@@ -1,8 +1,12 @@
 /target
 *.dsl
 *.dsl.dz
+*.mdx
+*.mdd
 *.dict
 *.idx
 *.ifo
-*.csv
+*.syn
+*.db
+*.txt
 test.*
