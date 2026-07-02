@@ -1,49 +1,36 @@
 # wikititlepair
 
-Generate bidirectional DSL dictionaries from Wikipedia interlanguage links via Wikidata. Works with any two Wikipedia languages. Inspired by ZZ's wikipedia titlepair.
+Generate bidirectional DSL and MDX dictionaries from Wikipedia interlanguage links
+via Wikidata. Any two languages. Inspired by ZZ's wikipedia titlepair.
 
-## What it does
+## Releases
 
-Download the Wikidata `wb_items_per_site` dump and extract interlanguage links between any two Wikipedia language editions. Supports all ~300 Wikipedia languages. Outputs an ABBYY Lingvo `.dsl` dictionary file where clicking a word in one language jumps to its entry in the other language.
-
-## Pre-built dictionaries
-
-A pre-built **English ↔ Chinese** bi-directional dictionary is included in releases. A scheduled workflow checks weekly for new Wikidata dumps and publishes an updated dictionary if available - no recompilation needed if no code changes.
+Pre-built **English ↔ Chinese** dictionaries (DSL + MDX) in [releases](https://github.com/wuyun-1921/wikititlepair/releases).
+Updated weekly when Wikidata dump changes.
 
 ## Usage
 
 ```bash
-# Any two Wikipedia languages
-wikititlepair en zh
-
-# Allow downloading dump if not cached
-wikititlepair en zh --download
+wikititlepair en zh           # any two Wikipedia language codes
+wikititlepair en zh --download # fetch dump if not cached
 ```
 
-## Output format
+## Build
 
-DSL (ABBYY Lingvo) format with clickable cross-references:
-
-```
-#NAME "wikipedia titlepair (en-zh)"
-#INDEX_LANGUAGE "en"
-#CONTENTS_LANGUAGE "zh"
-
-Music
-	<<音乐>>
-音乐
-	<<Music>>
+```sh
+cargo build --release
+# requires dictzip (dictd package) for .dsl.dz compression
 ```
 
-Clicking `音乐` in the Music entry jumps to the `音乐` entry.
+## Formats
 
-## Dependencies
+| Format | Output | Reader |
+|--------|--------|--------|
+| DSL | `.dsl.dz` | ABBYY Lingvo, GoldenDict-ng |
+| MDX | `.mdx` | MDict, GoldenDict-ng |
 
-- Rust 1.75+
-- `dictzip` (for `.dsl.dz` compression)
+MDX conversion: `python scripts/dsl2mdx.py output.dsl`
 
-## Data source
+## Data
 
-Uses the Wikidata [`wb_items_per_site` dump](https://dumps.wikimedia.org/wikidatawiki/latest/wikidatawiki-latest-wb_items_per_site.sql.gz) (~1.8GB compressed). This table maps Wikipedia page titles across all language editions via shared Wikidata item IDs.
-
-Dump files are cached in `~/.cache/wikidict/` for reuse across runs.
+[Wikidata `wb_items_per_site` dump](https://dumps.wikimedia.org/wikidatawiki/latest/wikidatawiki-latest-wb_items_per_site.sql.gz) (~1.8 GB). Cached at `~/.cache/wikidict/`. Only article titles (no Category/Template/Wikipedia pages).
