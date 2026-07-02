@@ -1,12 +1,10 @@
 # wikititlepair
 
-Generate bidirectional DSL dictionaries from Wikidata interlanguage links.
+Generate bidirectional DSL dictionaries from Wikidata interlanguage links. Inspired by ZZ's wikipedia titlepair.
 
 ## What it does
 
 Downloads the Wikidata `wb_items_per_site` dump and extracts interlanguage links between any two Wikipedia language editions. Outputs an ABBYY Lingvo `.dsl` dictionary file where clicking a word in one language jumps to its entry in the other language.
-
-Inspired by ZZ's wikipedia titlepair.
 
 ## Usage
 
