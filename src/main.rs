@@ -342,6 +342,13 @@ fn parse_dump(path: &Path, lang_a: &str, lang_b: &str) -> Result<Vec<(String, St
     Ok(entries)
 }
 
+/// Escape parentheses in DSL headwords/body text.
+/// DSL treats ( ) as optional part markers, so we must escape them with backslash
+/// to make them literal characters.
+fn escape_dsl_parens(s: &str) -> String {
+    s.replace('(', "\\(").replace(')', "\\)")
+}
+
 fn unquote(s: &str) -> String {
     let s = s.trim();
     if !s.starts_with('\'') || !s.ends_with('\'') {
@@ -408,8 +415,8 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     writeln!(file)?;
     
     for (a, b) in &entries {
-        writeln!(file, "{}", a)?;
-        writeln!(file, "\t<<{}>>", b)?;
+        writeln!(file, "{}", escape_dsl_parens(a))?;
+        writeln!(file, "\t<<{}>>", escape_dsl_parens(b))?;
     }
 
     eprintln!(
