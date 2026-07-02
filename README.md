@@ -1,25 +1,33 @@
 # wikititlepair
 
-Generate bidirectional DSL dictionaries from Wikidata interlanguage links. Inspired by ZZ's wikipedia titlepair.
+Generate bidirectional DSL dictionaries from Wikipedia interlanguage links via Wikidata. Inspired by ZZ's wikipedia titlepair.
 
 ## What it does
 
 Downloads the Wikidata `wb_items_per_site` dump and extracts interlanguage links between any two Wikipedia language editions. Outputs an ABBYY Lingvo `.dsl` dictionary file where clicking a word in one language jumps to its entry in the other language.
 
+## Releases
+
+Includes pre-built **English ↔ Chinese** bi-directional dictionary updated from Wikidata.
+
+## Auto-update
+
+Wikidata database updates approximately every two months. A scheduled workflow checks for updates and publishes a new dictionary release if the database is newer than the last release - no recompilation needed if no code changes.
+
 ## Usage
 
 ```bash
 # Basic usage (outputs wikipedia-titlepair-en-zh-YYYYMMDD.dsl)
-wikidict en zh
+wikititlepair en zh
 
 # Custom output file
-wikidict en zh -o my-dictionary.dsl
+wikititlepair en zh -o my-dictionary.dsl
 
 # Use cached dump, don't download
-wikidict en zh
+wikititlepair en zh
 
 # Allow downloading if dump not cached
-wikidict en zh --download
+wikititlepair en zh --download
 ```
 
 ## Output format
