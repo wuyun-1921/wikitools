@@ -13,7 +13,7 @@ mod error;
 mod escape;
 
 use error::{Result, WikiDictError};
-use escape::{escape_dsl, is_non_article, unquote, NON_ARTICLE_PREFIXES};
+use escape::{escape_dsl, is_non_article, unquote};
 
 #[derive(Parser)]
 #[command(name = "wiktitlepair")]
