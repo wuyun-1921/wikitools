@@ -93,58 +93,36 @@ jobs:
           restore-keys: |
             wikitools-wikidata-
 
-      - name: Generate dictionary
+      - name: Generate pair dictionary
         run: ./target/release/wikitools pair en zh --download
 
-      - name: Convert to MDX
+      - name: Bundle pair dictionary (DSL + MDX)
         run: |
-          dictzip -d wikipedia-titlepair-en-zh-*.dsl.dz
+          # DSL
+          DSL_DZ=$(ls wikipedia-titlepair-en-zh-*.dsl.dz | head -1)
+          BASE="${DSL_DZ%.dsl.dz}"
+          tar czf "${BASE}-dsl.tar.gz" "$DSL_DZ" assets/wikidata.ico
+          echo "  ${BASE}-dsl.tar.gz"
+          # MDX conversion
+          dictzip -d "$DSL_DZ"
           pip install mdict-utils
-          python scripts/dsl2mdx.py wikipedia-titlepair-en-zh-*.dsl -t "wikipedia titlepair (en-zh)"
-          dictzip wikipedia-titlepair-en-zh-*.dsl
+          DSL="${DSL_DZ%.dz}"
+          python scripts/dsl2mdx.py "$DSL" -t "wikipedia titlepair (en-zh)"
+          MDX="${DSL%.dsl}.mdx"
+          tar czf "${BASE}-mdx.tar.gz" "$MDX" assets/wikidata.ico
+          echo "  ${BASE}-mdx.tar.gz"
+          dictzip "$DSL"
 
-      - name: Generate titles dictionaries
+      - name: Generate titles dictionaries (MDX + JS)
         run: |
-          ./target/release/wikitools titles en --download
-          ./target/release/wikitools titles zh --download
-
-      - name: Convert titles to MDX
-        run: |
-          for DSL_DZ in wikipedia-titles-*.dsl.dz; do
-            echo "Converting $DSL_DZ to MDX..."
-            dictzip -d "$DSL_DZ"
-            DSL="${DSL_DZ%.dz}"
-            python scripts/dsl2mdx.py "$DSL" -t "wikipedia titles"
-            dictzip "$DSL"
-          done
-
-      - name: Bundle dictionaries with icon
-        run: |
-          ICON=assets/wikidata.ico
-          # Pair dictionaries
-          for FMT in dsl mdx; do
-            if [ "$FMT" = "dsl" ]; then
-              DICT=$(ls wikipedia-titlepair-en-zh-*.dsl.dz | head -1)
-              BASE="${DICT%.dsl.dz}"
-            else
-              DICT=$(ls wikipedia-titlepair-en-zh-*.mdx | head -1)
-              BASE="${DICT%.mdx}"
-            fi
-            tar czf "${BASE}-${FMT}.tar.gz" "$DICT" "$ICON"
-            echo "  ${BASE}-${FMT}.tar.gz"
-          done
-
-          # Titles dictionaries — DSL and MDX per language
           for LANG in en zh; do
-            TITLES_DSL_DZ=$(ls wikipedia-titles-${LANG}-*.dsl.dz | head -1)
-            BASE="${TITLES_DSL_DZ%.dsl.dz}"
-            tar czf "${BASE}-dsl.tar.gz" "$TITLES_DSL_DZ" "$ICON"
-            echo "  ${BASE}-dsl.tar.gz"
-
-            TITLES_MDX=$(ls wikipedia-titles-${LANG}-*.mdx | head -1)
-            BASE_MDX="${TITLES_MDX%.mdx}"
-            tar czf "${BASE_MDX}-mdx.tar.gz" "$TITLES_MDX" "$ICON"
-            echo "  ${BASE_MDX}-mdx.tar.gz"
+            ./target/release/wikitools titles $LANG --download
+            # Bundle MDX + JS + icon per language
+            MDX=$(ls wikipedia-titles-${LANG}-*.mdx | head -1)
+            JS="wikipedia-titles-${LANG}.js"
+            BASE="${MDX%.mdx}"
+            tar czf "${BASE}-mdx.tar.gz" "$MDX" "$JS" assets/wikidata.ico
+            echo "  ${BASE}-mdx.tar.gz"
           done
 
       - name: Upload dictionary artifacts
