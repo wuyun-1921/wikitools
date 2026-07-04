@@ -10,14 +10,14 @@ CLI tools for building dictionaries from Wikimedia data.
 ## Usage
 
 ```bash
-# Build a bidirectional EN↔ZH dictionary
+# Build a bidirectional EN↔ZH dictionary, can be any two languages
 wikitools pair en zh --download
 
-# Extract all English Wikipedia titles as a URL dictionary
+# Extract all English Wikipedia titles as a URL dictionary, can be any language
 wikitools titles en --download
 
-# Extract all Japanese Wiktionary titles
-wikitools titles ja --project wiktionary --download
+# Extract all Latin Wiktionary titles
+wikitools titles la --project wiktionary --download
 ```
 
 ## Build
