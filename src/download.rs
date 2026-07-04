@@ -16,10 +16,6 @@ pub fn wikidata_dump_url() -> String {
     )
 }
 
-pub fn wikidata_dump_filename() -> &'static str {
-    WIKIDATA_FILENAME
-}
-
 pub fn download_file(url: &str, path: &Path) -> Result<()> {
     let filename = path.file_name().unwrap().to_str().unwrap();
 
