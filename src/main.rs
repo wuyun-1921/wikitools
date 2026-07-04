@@ -208,12 +208,9 @@ fn run_titles(
     let desc_str = format!("{} article titles from {} {}", lang.to_uppercase(), if project == "wiki" { "Wikipedia" } else { project }, dump_date);
     mdx::write_mdx(&mdx_path, &title_str, &desc_str, &all)?;
 
-    // GoldenDict loads .js matching the .mdx basename
-    let js_path = mdx_path.with_extension("js");
+    // Stable JS name — doesn't change across dump updates
+    let js_path = mdx_path.with_file_name(format!("wikipedia-titles-{}.js", lang));
     std::fs::write(&js_path, &all[0].1)?;
-    // Also write stable-name copy (survives dump-date changes)
-    let stable_js = mdx_path.with_file_name(format!("wikipedia-titles-{}.js", lang));
-    std::fs::write(&stable_js, &all[0].1)?;
 
     let size_mb = std::fs::metadata(&mdx_path)?.len() as f64 / 1e6;
     eprintln!("\nDone! {} entries → {} ({:.1} MB)", entry_count, mdx_path.display(), size_mb);
