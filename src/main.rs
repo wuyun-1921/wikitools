@@ -193,14 +193,12 @@ fn run_titles(
 
     eprintln!("  Sorting + packing {} entries...", entry_count);
 
-    // Build final entry list with \\js resource at position 0
+    // \\js resource: injects <script> tag that GoldenDict loads into every article
+    let js_name = format!("wikipedia-titles-{}.js", lang);
     let mut all: Vec<(String, String)> = Vec::with_capacity(entries.len() + 1);
     all.push((
         "\\js".to_string(),
-        format!(
-            "document.addEventListener('click',function(e){{var el=e.target.closest('.wl');if(el){{window.open('https://{}.{}.org'+el.getAttribute('data-p'),'_blank')}}}});",
-            lang, project
-        ),
+        format!("<script src=\"{}\"></script>", js_name),
     ));
     all.append(&mut entries);
 
@@ -208,9 +206,12 @@ fn run_titles(
     let desc_str = format!("{} article titles from {} {}", lang.to_uppercase(), if project == "wiki" { "Wikipedia" } else { project }, dump_date);
     mdx::write_mdx(&mdx_path, &title_str, &desc_str, &all)?;
 
-    // Stable JS name — doesn't change across dump updates
+    // External JS: the \\js record injects <script src="..."> pointing here
     let js_path = mdx_path.with_file_name(format!("wikipedia-titles-{}.js", lang));
-    std::fs::write(&js_path, &all[0].1)?;
+    std::fs::write(&js_path, format!(
+        "document.addEventListener('click',function(e){{var el=e.target.closest('.wl');if(el){{window.open('https://{}.{}.org'+el.getAttribute('data-p'),'_blank')}}}});",
+        lang, project
+    ))?;
 
     let size_mb = std::fs::metadata(&mdx_path)?.len() as f64 / 1e6;
     eprintln!("\nDone! {} entries → {} ({:.1} MB)", entry_count, mdx_path.display(), size_mb);
