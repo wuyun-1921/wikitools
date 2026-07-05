@@ -63,6 +63,10 @@ enum Command {
         #[arg(long, default_value = "wikipedia")]
         project: String,
 
+        /// Output format: mdx (default) or dsl
+        #[arg(long, default_value = "mdx")]
+        format: String,
+
         /// Output file path
         #[arg(short, long)]
         output: Option<PathBuf>,
@@ -141,6 +145,7 @@ fn run_pair(
 fn run_titles(
     lang: &str,
     project: &str,
+    format: &str,
     output: Option<PathBuf>,
     cache_dir: &PathBuf,
     download: bool,
@@ -151,74 +156,83 @@ fn run_titles(
     let dump_date = get_dump_date(&listing_url, "all-titles-in-ns0.gz")
         .unwrap_or_else(|_| "latest".to_string());
 
-    let mdx_path = output.unwrap_or_else(|| {
-        PathBuf::from(format!("wikipedia-titles-{}-{}.mdx", lang, dump_date))
-    });
-
     eprintln!("\nParsing titles dump...");
     let mut entries = titles::parse_all_titles(&dump_path, lang, project)?;
     let entry_count = entries.len();
 
-    // Johnsons pattern: <script> loads JS, onclick calls it
-    // Put <script> tag in first entry body so GoldenDict loads the JS file
-    let js_name = format!("wikipedia-titles-{}.js", lang);
-    if let Some(first) = entries.first_mut() {
-        first.1 = format!("<script src=\"{}\"></script>{}", js_name, first.1);
-    }
+    if format == "dsl" {
+        // DSL: alphabetically sorted, escaped headwords, URL as body
+        entries.par_sort();
+        entries.dedup();
+        let escaped: Vec<(String, String)> = entries
+            .into_par_iter()
+            .map(|(display, path)| {
+                let head = escape_dsl(&display);
+                let url = format!("https://{}.{}.org{}", lang, project, path);
+                (head, url)
+            })
+            .collect();
 
-    for (display, path) in entries.iter_mut() {
-        *path = format!(
-            "<span class=\"wl\" data-p=\"{0}\" onclick=\"go(this)\">{1}</span>",
-            path, display
-        );
-    }
+        let output = output.unwrap_or_else(|| {
+            PathBuf::from(format!("wikipedia-titles-{}-{}.dsl", lang, dump_date))
+        });
 
-    // MDict sort order:
-    // 1. lowercase both keys
-    // 2. strip ALL punctuation+spaces from entire string
-    // 3. compare stripped strings
-    // 4. tiebreak: shorter stripped string first
-    // 5. tiebreak: strip trailing punctuation from original, reverse compare
-    entries.sort_by(|a, b| {
-        let al = a.0.to_lowercase();
-        let bl = b.0.to_lowercase();
-        let as_: String = al.chars().filter(|c| !c.is_ascii_punctuation() && *c != ' ').collect();
-        let bs: String = bl.chars().filter(|c| !c.is_ascii_punctuation() && *c != ' ').collect();
-        match as_.cmp(&bs) {
-            std::cmp::Ordering::Equal => match as_.len().cmp(&bs.len()) {
-                std::cmp::Ordering::Equal => {
-                    let at = al.trim_end_matches(|c: char| c.is_ascii_punctuation());
-                    let bt = bl.trim_end_matches(|c: char| c.is_ascii_punctuation());
-                    bt.cmp(at) // reverse
-                }
+        let label = format!("wikipedia titles ({})", lang);
+        write_dsl(&output, &label, lang, lang, &escaped)?;
+        eprintln!("\nDone! {} entries written to {}", entry_count, output.display());
+        compress_dictzip(&output);
+    } else {
+        // MDX: MDict sort, HTML bodies with onclick+JS
+        entries.sort_by(|a, b| {
+            let al = a.0.to_lowercase();
+            let bl = b.0.to_lowercase();
+            let as_: String = al.chars().filter(|c| !c.is_ascii_punctuation() && *c != ' ').collect();
+            let bs: String = bl.chars().filter(|c| !c.is_ascii_punctuation() && *c != ' ').collect();
+            match as_.cmp(&bs) {
+                std::cmp::Ordering::Equal => match as_.len().cmp(&bs.len()) {
+                    std::cmp::Ordering::Equal => {
+                        let at = al.trim_end_matches(|c: char| c.is_ascii_punctuation());
+                        let bt = bl.trim_end_matches(|c: char| c.is_ascii_punctuation());
+                        bt.cmp(at)
+                    }
+                    other => other,
+                },
                 other => other,
-            },
-            other => other,
+            }
+        });
+
+        let js_name = format!("wikipedia-titles-{}.js", lang);
+        for (i, (display, path)) in entries.iter_mut().enumerate() {
+            let span = format!(
+                "<span class=\"wl\" data-p=\"{0}\" onclick=\"go(this)\">{1}</span>",
+                path, display
+            );
+            *path = if i == 0 {
+                format!("<head><script src=\"{0}\"></script></head>{1}", js_name, span)
+            } else {
+                span
+            };
         }
-    });
 
-    eprintln!("  Sorting + packing {} entries...", entry_count);
+        let mdx_path = output.unwrap_or_else(|| {
+            PathBuf::from(format!("wikipedia-titles-{}-{}.mdx", lang, dump_date))
+        });
 
-    // Inject <script> tag into the first entry's body — GoldenDict loads it
-    // when any entry is viewed, just like Johnsons' 00mulu directory page.
-    let js_name = format!("wikipedia-titles-{}.js", lang);
-    if let Some(first) = entries.first_mut() {
-        first.1 = format!("<script src=\"{}\"></script>{}", js_name, first.1);
+        eprintln!("  Packing {} entries...", entry_count);
+        let proj_display = if project == "wiki" { "Wikipedia" } else { project };
+        let title_str = format!("{} {} Titles", lang.to_uppercase(), proj_display);
+        let desc_str = format!("{} article titles from {} {}", lang.to_uppercase(), proj_display, dump_date);
+        mdx::write_mdx(&mdx_path, &title_str, &desc_str, &entries)?;
+
+        let js_path = mdx_path.with_file_name(format!("wikipedia-titles-{}.js", lang));
+        std::fs::write(&js_path, format!(
+            "function go(el){{window.open('https://{}.{}.org'+el.getAttribute('data-p'),'_blank')}}",
+            lang, project
+        ))?;
+
+        let size_mb = std::fs::metadata(&mdx_path)?.len() as f64 / 1e6;
+        eprintln!("\nDone! {} entries → {} ({:.1} MB)", entry_count, mdx_path.display(), size_mb);
     }
-
-    let title_str = format!("{} {} Titles", lang.to_uppercase(), if project == "wiki" { "Wikipedia" } else { project });
-    let desc_str = format!("{} article titles from {} {}", lang.to_uppercase(), if project == "wiki" { "Wikipedia" } else { project }, dump_date);
-    mdx::write_mdx(&mdx_path, &title_str, &desc_str, &entries)?;
-
-    // External JS — \`onclick="go(this)"\` in entries calls this
-    let js_path = mdx_path.with_file_name(format!("wikipedia-titles-{}.js", lang));
-    std::fs::write(&js_path, format!(
-        "function go(el){{window.open('https://{}.{}.org'+el.getAttribute('data-p'),'_blank')}}",
-        lang, project
-    ))?;
-
-    let size_mb = std::fs::metadata(&mdx_path)?.len() as f64 / 1e6;
-    eprintln!("\nDone! {} entries → {} ({:.1} MB)", entry_count, mdx_path.display(), size_mb);
     Ok(())
 }
 
@@ -229,8 +243,8 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         Command::Pair { lang_a, lang_b, output, cache_dir, download, full } => {
             run_pair(&lang_a, &lang_b, output, &cache_dir, download, full)?;
         }
-        Command::Titles { lang, project, output, cache_dir, download } => {
-            run_titles(&lang, &project, output, &cache_dir, download)?;
+        Command::Titles { lang, project, format, output, cache_dir, download } => {
+            run_titles(&lang, &project, &format, output, &cache_dir, download)?;
         }
     }
 
